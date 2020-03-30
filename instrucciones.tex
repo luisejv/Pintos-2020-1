@@ -1,0 +1,48 @@
+\title{Guide to using PintOS}
+\author{
+		Prof: Jorge Gonzalez\\
+			jgonzalez@utec.edu.pe\\
+        TA: Martin Carrasco \\
+         	martin.carrasco@utec.edu.pe
+}
+\date{\today}
+\documentclass[12pt]{article}
+\begin{document}
+
+\maketitle
+
+\section{Making a docker container for PintOS}
+
+\begin{enumerate}
+	\item Pull the docker image from Docker Hub
+	\item Create a volume to have data be persistant e.x. \textit{sudo docker volume create my\_volume PATH}
+	\item Create the Dockerfile \textit{(Use the template Dockerfile included to guide you)}
+	\begin{itemize}
+		\item Install dependencies 
+		\item Set enviromental variables 
+	\end{itemize}
+	\item Build the container e.x. \textit{sudo docker built -t pintos .}
+	\item Run the container e.x. \textit{sudo docker run -it --volume my\_volume:/app --name pint-sim pintos}
+	
+\end{enumerate}
+
+\section{Seting up and compiling PintOS}
+\begin{enumerate}
+	\item Make sure all the dependencies were installed correctly
+	\item Compile the following submodules
+	\begin{itemize}
+		\item \textit{userprog}
+		\item \textit{vm}
+		\item \textit{filesys}
+	\end{itemize}
+	\item Edit \textbf{src/utils/Makefile} to replace \textit{LDFLAGS= -lm} to \textit{LDLIBS = -lm} then compile \textbf{src/utils}
+	\item Edit  \textbf{src/thread/Make.vars} and change $SIMULATOR=$ to $SIMULATOR= -qemu$ then compile \textbf{src/threads}
+	\item Change \textbf{src/utils/pintos} $\$sim=bochos$ to $\$sim=qemu$
+	\item Change \textbf{src/utils/pintos} $\$name = find\_file('kernel.bin')$ to point to  \textbf{threads/build/kernel.bin}
+	\item  Change \textbf{src/utils/pintos} $my (@cmd) = ('qemu')$ to $my (@cmd) =qemu-system-x86\_64$
+	\item Edit \textbf{src/utils/Pintos.pm} $\$name = find\_file('loader.bin')$ and point it to \textbf{threads/build/loader.bin}
+\end{enumerate}
+\end{document}
+
+
+
