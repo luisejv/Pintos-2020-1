@@ -6,7 +6,7 @@ SHELL ["/bin/bash", "-c"]
 
 # Install required packages
 RUN apt-get -y update
-RUN apt-get install -y qemu linux-headers-$(uname -r)
+RUN apt-get install -y qemu linux-virtual
 
 
 # Directory where our program will be executed
