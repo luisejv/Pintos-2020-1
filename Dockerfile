@@ -6,14 +6,14 @@ SHELL ["/bin/bash", "-c"]
 
 # Install required packages
 RUN apt-get -y update
-RUN apt-get install -y qemu linux-headers
+RUN apt-get install -y qemu linux-headers-$(uname -r)
 
 
 # Directory where our program will be executed
-workdir /app
+workdir /pint-os
 
 #Copy contents of current folder to container directory
-copy . /app
+copy ./pintos/src/ /pint-os
 
 
 # Enviromental Variables 
