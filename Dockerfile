@@ -6,8 +6,8 @@ SHELL ["/bin/bash", "-c"]
 
 # Install required packages
 RUN apt-get -y update
-RUN apt-get install -y qemu linux-virtual
-
+#RUN apt-get install -y qemu linux-virtual #FIXIT: grub error
+RUN apt-get install -y qemu linux-headers-generic
 
 # Directory where our program will be executed
 workdir /pint-os
