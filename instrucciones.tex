@@ -1,4 +1,4 @@
-\title{Guide to using PintOS}
+\title{Installation Guide of PintOS}
 \author{
 		Prof: Jorge Gonzalez\\
 			jgonzalez@utec.edu.pe\\
@@ -8,6 +8,7 @@
 \date{\today}
 \documentclass[12pt]{article}
 \usepackage{hyperref}
+\usepackage{listings}
 \begin{document}
 
 \maketitle
@@ -15,15 +16,16 @@
 \section{Making a docker container for PintOS}
 
 \begin{enumerate}
-	\item Pull the docker image from Docker Hub
-	\item Create a volume to have data be persistant e.g. \textit{sudo docker volume create my\_volume PATH} (see additional info in \texttt{item 5}).
-	\item Create the Dockerfile \textit{(Use the template Dockerfile included to guide you, notice that in our template we already pull the image).}
+	\item Create the Dockerfile \textit{(Use the template Dockerfile included to guide you).}
 	\begin{itemize}
-		\item Install dependencies 
-		\item Set enviromental variables 
+		\item Pull the docker image from Docker Hub (e.g.: notice that in our template we pull the image of Ubuntu 14:04).
+		\item Install dependencies (e.g.: qemu, build-essentials, linux-headers-generic).
+		\item Set enviromental variables (e.g: \texttt{export \$PINTOS\_HOME=\/pint-os\/}).
 	\end{itemize}
-	\item Build the container e.g. \textit{sudo docker build -t pintos .}
-	\item Run the container e.g. \textit{sudo docker run -it --volume my\_volume:/pint-os --name pint-sim pintos}. For more details about using volumes, please refer to \href{https://docs.docker.com/storage/volumes/}{Docker Documentation}.
+	\item Create a volume to have data be persistant e.g. \textit{sudo docker volume create my\_volume PATH} (see additional info in \texttt{item 5}).
+	
+	\item Build the container e.g. \texttt{sudo docker build -t pintos .} ((dot) is part of the command).
+	\item Run the container e.g. \texttt{sudo docker run -it --volume my\_volume:\/pint-os --name pint-sim pintos}. For more details about using volumes, please refer to \href{https://docs.docker.com/storage/volumes/}{Docker Documentation}.
 	
 \end{enumerate}
 
@@ -36,13 +38,45 @@
 		\item \texttt{vm}
 		\item \texttt{filesys}
 	\end{itemize}
-	\item Edit \textbf{src/utils/Makefile} to replace \texttt{LDFLAGS= -lm} to \texttt{LDLIBS = -lm} then compile \textbf{src/utils}
-	\item Edit  \textbf{src/thread/Make.vars} and change \texttt{SIMULATOR=} to \texttt{SIMULATOR= -qemu} then compile \textbf{src/threads}
-	\item Change \textbf{src/utils/pintos} \texttt{\$sim=bochos} to \texttt{\$sim=qemu}
-	\item Change \textbf{src/utils/pintos}, check \texttt{\$name = find\_file('kernel.bin')} to point to \textbf{threads/build/kernel.bin}
-	\item  Change \textbf{src/utils/pintos} \texttt{my (@cmd) = ('qemu')} to \texttt{my (@cmd) =qemu-system-x86\_64}
-	\item Edit in \textbf{src/utils/Pintos.pm}, \texttt{\$name = find\_file('loader.bin')} and point it to \textbf{threads/build/loader.bin}
-	\item See \href{https://web.stanford.edu/class/cs140/projects/pintos/pintos_1.html#SEC4}{PintOS Documentation} for compile and run. Notice that we are using Qemu.
+	\item Compile \textbf{/pint-os/utils} (\textbf{NOTE:} compile by using \texttt{make} on the folder).
+	\item Only if there is an error related to \texttt{floor()} funcion, edit \textbf{/pint-os/utils/Makefile} to replace \texttt{CFLAGS= -lm} to \texttt{LDLIBS = -lm} then compile.
+	\item Edit \textbf{/pint-os/thread/Make.vars} and change \texttt{SIMULATOR=} to \texttt{SIMULATOR= --qemu} then compile in \textbf{/pint-os/threads}.
+	\item Change \textbf{/pint-os/utils/pintos} \texttt{\$sim=bochos} to \texttt{\$sim=qemu} in \texttt{line 103}.
+	\item Change \textbf{/pint-os/utils/pintos}, check \texttt{line 257}, \texttt{\$name = find\_file('kernel.bin')} to point to \textbf{/pint-os/threads/build/kernel.bin}
+	%\item  Change \textbf{/pint-os/utils/pintos} \texttt{my (@cmd) = ('qemu')} to \texttt{my (@cmd) =qemu-system-x86\_64}
+	\item Edit \texttt{line 362} of \textbf{/pint-os/utils/Pintos.pm}, \texttt{\$name = find\_file('loader.bin')} and point it to \textbf{/pint-os/threads/build/loader.bin}
+	\item Go to folder \textbf{/pint-os/utils/} and test your program by executing: \texttt{./pintos run alarm-multiple}. The expected output is:
+
+\begin{lstlisting}[basicstyle=\small, language=bash]
+root@a9ecd025bd0e:/pint-os# pintos run alarm-multiple
+qemu-system-i386 -device isa-debug-exit -hda /tmp/D86qNeoZCC.dsk -m 4 -net none -nographic -monitor null
+PiLo hda1
+Loading..........
+Kernel command line: run alarm-multiple
+Pintos booting with 4,088 kB RAM...
+382 pages available in kernel pool.
+382 pages available in user pool.
+Calibrating timer...  258,457,600 loops/s.
+Boot complete.
+Executing 'alarm-multiple':
+(alarm-multiple) begin
+(alarm-multiple) Creating 5 threads to sleep 7 times each.
+(alarm-multiple) Thread 0 sleeps 10 ticks each time,
+(alarm-multiple) thread 1 sleeps 20 ticks each time, and so on.
+(alarm-multiple) If successful, product of iteration count and
+(alarm-multiple) sleep duration will appear in nondescending order.
+(alarm-multiple) thread 0: duration=10, iteration=1, product=10
+(alarm-multiple) thread 0: duration=10, iteration=2, product=20
+(alarm-multiple) thread 1: duration=20, iteration=1, product=20
+(alarm-multiple) thread 0: duration=10, iteration=3, product=30
+(alarm-multiple) thread 2: duration=30, iteration=1, product=30
+(alarm-multiple) thread 3: duration=40, iteration=1, product=40
+(alarm-multiple) thread 0: duration=10, iteration=4, product=40
+(alarm-multiple) thread 1: duration=20, iteration=2, product=40
+\end{lstlisting}
+
+	\item Optional: Add to the PATH the pintos binary folder using \texttt{export PATH=/pint-os/utils:\$PATH}.
+	\item See \href{https://web.stanford.edu/class/cs140/projects/pintos/pintos_1.html#SEC4}{PintOS Documentation} for more information. Notice that we are using Qemu.
 \end{enumerate}
 \end{document}
 
