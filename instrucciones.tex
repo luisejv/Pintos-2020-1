@@ -19,7 +19,7 @@
 	\item Create the Dockerfile \textit{(Use the template Dockerfile included to guide you).}
 	\begin{itemize}
 		\item Pull the docker image from Docker Hub (e.g.: notice that in our template we pull the image of Ubuntu 14:04).
-		\item Install dependencies (e.g.: qemu, build-essentials, linux-headers-generic).
+		\item Install dependencies (e.g.: qemu, build-essential, linux-headers-generic).
 		\item Set enviromental variables (e.g: \texttt{export \$PINTOS\_HOME=\/pint-os\/}).
 	\end{itemize}
 	\item Create a volume to have data be persistant e.g. \textit{sudo docker volume create my\_volume PATH} (see additional info in \texttt{item 5}).
@@ -40,7 +40,8 @@
 	\end{itemize}
 	\item Compile \textbf{/pint-os/utils} (\textbf{NOTE:} compile by using \texttt{make} on the folder).
 	\item Only if there is an error related to \texttt{floor()} funcion, edit \textbf{/pint-os/utils/Makefile} to replace \texttt{CFLAGS= -lm} to \texttt{LDLIBS = -lm} then compile.
-	\item Edit \textbf{/pint-os/thread/Make.vars} and change \texttt{SIMULATOR=} to \texttt{SIMULATOR= --qemu} then compile in \textbf{/pint-os/threads}.
+	\item Edit \textbf{/pint-os/thread/Make.vars} and change \texttt{SIMULATOR=} to \texttt{SIMULATOR= --qemu} 
+	\item Compile in \textbf{/pint-os/threads}.
 	\item Change \textbf{/pint-os/utils/pintos} \texttt{\$sim=bochos} to \texttt{\$sim=qemu} in \texttt{line 103}.
 	\item Change \textbf{/pint-os/utils/pintos}, check \texttt{line 257}, \texttt{\$name = find\_file('kernel.bin')} to point to \textbf{/pint-os/threads/build/kernel.bin}
 	%\item  Change \textbf{/pint-os/utils/pintos} \texttt{my (@cmd) = ('qemu')} to \texttt{my (@cmd) =qemu-system-x86\_64}
@@ -75,8 +76,8 @@ Executing 'alarm-multiple':
 (alarm-multiple) thread 1: duration=20, iteration=2, product=40
 \end{lstlisting}
 
-	\item Optional: Add to the PATH the pintos binary folder using \texttt{export PATH=/pint-os/utils:\$PATH}.
-	\item See \href{https://web.stanford.edu/class/cs140/projects/pintos/pintos_1.html#SEC4}{PintOS Documentation} for more information. Notice that we are using Qemu.
+	\item Optional: Add to the PATH the pintos binary folder using \texttt{export PATH=/pint-os/utils:\$PATH}. (already in Dockerfile)
+	\item See \href{https://web.stanford.edu/class/cs140/projects/pintos/pintos_1.html}{PintOS Documentation} for more information. Notice that we are using Qemu.
 \end{enumerate}
 \end{document}
 
