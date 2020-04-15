@@ -57,22 +57,25 @@ sema_init (struct semaphore *sema, unsigned value)
    interrupt handler.  This function may be called with
    interrupts disabled, but if it sleeps then the next scheduled
    thread will probably turn interrupts back on. */
+
+   /*This function must be atomic, so we must assure that when executing
+     interrupts are down*/
 void
 sema_down (struct semaphore *sema) 
 {
-  enum intr_level old_level;
+  enum intr_level old_level; //Gets the current interrupt lvl 
 
   ASSERT (sema != NULL);
   ASSERT (!intr_context ());
 
-  old_level = intr_disable ();
+  old_level = intr_disable (); //Disables the interrupt and also stores it
   while (sema->value == 0) 
     {
       list_push_back (&sema->waiters, &thread_current ()->elem);
       thread_block ();
     }
   sema->value--;
-  intr_set_level (old_level);
+  intr_set_level (old_level); //Returns the interrupt lvl back to its original state 
 }
 
 /* Down or "P" operation on a semaphore, but only if the
