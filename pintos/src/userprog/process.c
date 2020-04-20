@@ -208,7 +208,7 @@ struct Elf32_Phdr
 #define PF_W 2          /* Writable. */
 #define PF_R 4          /* Readable. */
 
-static bool setup_stack (void **esp);
+static bool setup_stack (void **esp, char *file_name);
 static bool validate_segment (const struct Elf32_Phdr *, struct file *);
 static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
                           uint32_t read_bytes, uint32_t zero_bytes,
@@ -473,51 +473,68 @@ setup_stack (void **esp, char* file_name)
       if (success)
 	//Puntero al top del stack
         *esp = PHYS_BASE;
+        //hex_dump((uintptr_t)esp, esp, sizeof(char) * 8, true);	
       else
         palloc_free_page (kpage);
     }
   
   struct list_elem* iter = list_begin(&execAndArguments);
+ 
   //Podria ser -> void aux = *esp;
   
   size_t count = 0;
 
   while(iter != list_end(&execAndArguments)){
-		
 	struct node* Node = list_entry(iter, struct node, list_elem); 
-	
 	count += strlen(Node->tok);
 	*esp -= strlen(Node->tok);
 	memcpy(*esp,Node->tok,strlen(Node->tok));
+	//hex_dump((uintptr_t)esp, esp, sizeof(char) * 8, true);	
 	iter = list_next(iter);	
-
   }
 
   size_t aux = count;
 
+  //// WORD ALIGN ////
   aux = 4-(aux % 4); 
   *esp -= aux;
   memset(*esp,0,aux);
+  //hex_dump((uintptr_t)esp, esp, sizeof(char) * 8, true);	
 
   ////SENTINEL////
   *esp -= sizeof(size_t);
   memset(*esp,0,sizeof(size_t));
+  //hex_dump((uintptr_t)esp, esp, sizeof(char) * 8, true);	
 
-  ////ADRESS////
+  size_t aux = 0;
 
-  count += aux;
-  size_t rowsMoved = count/4;
-
-//Tenemos que apuntar a donde comienza cada argumento, sumar len. 
-
-  for(size_t i = 0; i != rowsMoved; i++){
-	*esp -= sizeof(*char);
-	memcpy(*esp,PHYS_BASE+i,sizeof(*char));
+  //// ARGS ADDRESS POINTERS /////
+  struct list_elem* iter = list_begin(&execAndArguments);
+  while (iter != list_end(&execAndArguments)){	
+	struct node* Node = list_entry(iter, struct node, list_elem); 
+ 	*esp -= sizeof(*char);
+	aux += strlen(Node->tok);
+	memcpy(*esp, PHYS_BASE - aux, sizeof(*char)); 
+       //hex_dump((uintptr_t)esp, esp, sizeof(char) * 8, true);	
   }
 
-  
+  //// POINTER TO ARG HEAD ////
+  *esp -= sizeof(*char);
+  memcpy(*esp, *esp + sizeof(*char), sizeof(*char));
+  //hex_dump((uintptr_t)esp, esp, sizeof(char) * 8, true);	
+  //// ARG COUNTER ////
+  *esp -= sizeof(size_t);
+  memset(*esp, listSize - 1, sizeof(size_t));
+  //hex_dump((uintptr_t)esp, esp, sizeof(char) * 8, true);	
+  //// RETURN FAKE ADDRESS ////
+  *esp -= sizeof(size_t);
+  memset(*esp, 0, sizeof(size_t));
+  //hex_dump((uintptr_t)esp, esp, sizeof(char) * 8, true);	
 
-    
+  //// HEXDUMP ////
+
+  //// static void hex_dump((uintptr_t)**, void**, int, bool);
+ 
   return success;
 }
 
