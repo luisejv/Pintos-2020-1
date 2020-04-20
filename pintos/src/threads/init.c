@@ -130,7 +130,7 @@ main (void)
   printf ("Boot complete.\n");
   
   /* Run actions specified on kernel command line. */
-  run_actions (argv);
+  run_actions (argv); //Argumentos de la linea de comando pasados cuando llamamos a pintos.
 
   /* Finish up. */
   shutdown ();

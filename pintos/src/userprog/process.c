@@ -4,6 +4,7 @@
 #include <round.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <list.h>
 #include <string.h>
 #include "userprog/gdt.h"
 #include "userprog/pagedir.h"
@@ -30,16 +31,22 @@ process_execute (const char *file_name)
 {
   char *fn_copy;
   tid_t tid;
-
+   
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
+ 
+  char *exec_name;
+  char *save_ptr;
+  exec_name = strtok_r(file_name," ",&save_ptr);
+
   fn_copy = palloc_get_page (0);
   if (fn_copy == NULL)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
 
   /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
+  //Cambiamos el file_name por exec_name
+  tid = thread_create (exec_name, PRI_DEFAULT, start_process, fn_copy);
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy); 
   return tid;
@@ -50,18 +57,22 @@ process_execute (const char *file_name)
 static void
 start_process (void *file_name_)
 {
+
   char *file_name = file_name_;
   struct intr_frame if_;
   bool success;
-
+ 
   /* Initialize interrupt frame and load executable. */
   memset (&if_, 0, sizeof if_);
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
+  
+  //Tenemos que separar un stack para el user program  
   success = load (file_name, &if_.eip, &if_.esp);
 
   /* If load failed, quit. */
+  //REVISAR ESTO
   palloc_free_page (file_name);
   if (!success) 
     thread_exit ();
@@ -88,7 +99,9 @@ start_process (void *file_name_)
 int
 process_wait (tid_t child_tid UNUSED) 
 {
-  return -1;
+  while(true){
+    thread_yield();
+  }
 }
 
 /* Free the current process's resources. */
@@ -302,7 +315,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
     }
 
   /* Set up stack. */
-  if (!setup_stack (esp))
+  if (!setup_stack (esp, file_name))
     goto done;
 
   /* Start address. */
@@ -426,9 +439,30 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 
 /* Create a minimal stack by mapping a zeroed page at the top of
    user virtual memory. */
+//Insertamos un argumento adicional al setup_stack
 static bool
-setup_stack (void **esp) 
+setup_stack (void **esp, char* file_name) 
 {
+
+////////ADDED 
+  
+ struct list execAndArguments;
+ list_init(&execAndArguments);
+  
+  struct node{
+	struct list_elem elem;
+	char* tok;
+  }
+
+  for(token = strtok_r(file_name," ", &save_ptr); token!= NULL; token=strtok_r(NULL," ", &save_ptr)){
+	struct node* excOrArg = malloc(sizeof(struct node));
+	strlcpy(excOrArg->tok,token,strlen(token));		
+	list_push_front(&execAndArguments, &(excOrArg->elem)); 
+  }
+  
+  size_t listSize = list_size(&execAndArguments); 
+
+/////////
   uint8_t *kpage;
   bool success = false;
 
@@ -437,10 +471,53 @@ setup_stack (void **esp)
     {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
       if (success)
+	//Puntero al top del stack
         *esp = PHYS_BASE;
       else
         palloc_free_page (kpage);
     }
+  
+  struct list_elem* iter = list_begin(&execAndArguments);
+  //Podria ser -> void aux = *esp;
+  
+  size_t count = 0;
+
+  while(iter != list_end(&execAndArguments)){
+		
+	struct node* Node = list_entry(iter, struct node, list_elem); 
+	
+	count += strlen(Node->tok);
+	*esp -= strlen(Node->tok);
+	memcpy(*esp,Node->tok,strlen(Node->tok));
+	iter = list_next(iter);	
+
+  }
+
+  size_t aux = count;
+
+  aux = 4-(aux % 4); 
+  *esp -= aux;
+  memset(*esp,0,aux);
+
+  ////SENTINEL////
+  *esp -= sizeof(size_t);
+  memset(*esp,0,sizeof(size_t));
+
+  ////ADRESS////
+
+  count += aux;
+  size_t rowsMoved = count/4;
+
+//Tenemos que apuntar a donde comienza cada argumento, sumar len. 
+
+  for(size_t i = 0; i != rowsMoved; i++){
+	*esp -= sizeof(*char);
+	memcpy(*esp,PHYS_BASE+i,sizeof(*char));
+  }
+
+  
+
+    
   return success;
 }
 
