@@ -37,7 +37,9 @@ process_execute (const char *file_name)
  
   char *exec_name;
   char *save_ptr;
-  exec_name = strtok_r(file_name," ",&save_ptr);
+  char espacio = ' ';
+  char *empty = espacio;
+  exec_name = strtok_r(file_name,espacio,&save_ptr);
 
   fn_copy = palloc_get_page (0);
   if (fn_copy == NULL)
@@ -452,9 +454,13 @@ setup_stack (void **esp, char* file_name)
   struct node{
 	struct list_elem elem;
 	char* tok;
-  }
-
-  for(token = strtok_r(file_name," ", &save_ptr); token!= NULL; token=strtok_r(NULL," ", &save_ptr)){
+  };
+  char espacio = ' ';
+  char *empty = espacio;
+  char *token;
+  
+  char *save_ptr;
+  for(token = strtok_r(file_name,espacio, &save_ptr); token!= NULL; token=strtok_r(NULL," ", &save_ptr)){
 	struct node* excOrArg = malloc(sizeof(struct node));
 	strlcpy(excOrArg->tok,token,strlen(token));		
 	list_push_front(&execAndArguments, &(excOrArg->elem)); 
@@ -485,7 +491,7 @@ setup_stack (void **esp, char* file_name)
   size_t count = 0;
 
   while(iter != list_end(&execAndArguments)){
-	struct node* Node = list_entry(iter, struct node, list_elem); 
+	struct node* Node = list_entry(iter, struct node, elem); 
 	count += strlen(Node->tok);
 	*esp -= strlen(Node->tok);
 	memcpy(*esp,Node->tok,strlen(Node->tok));
@@ -506,21 +512,21 @@ setup_stack (void **esp, char* file_name)
   memset(*esp,0,sizeof(size_t));
   //hex_dump((uintptr_t)esp, esp, sizeof(char) * 8, true);	
 
-  size_t aux = 0;
+  aux = 0;
 
   //// ARGS ADDRESS POINTERS /////
-  struct list_elem* iter = list_begin(&execAndArguments);
-  while (iter != list_end(&execAndArguments)){	
-	struct node* Node = list_entry(iter, struct node, list_elem); 
- 	*esp -= sizeof(*char);
+  struct list_elem* iter2 = list_begin(&execAndArguments);
+  while (iter2 != list_end(&execAndArguments)){	
+	struct node* Node = list_entry(iter2, struct node, elem); 
+ 	*esp -= sizeof(char*);
 	aux += strlen(Node->tok);
-	memcpy(*esp, PHYS_BASE - aux, sizeof(*char)); 
+	memcpy(*esp, PHYS_BASE - aux, sizeof(char *)); 
        //hex_dump((uintptr_t)esp, esp, sizeof(char) * 8, true);	
   }
 
   //// POINTER TO ARG HEAD ////
-  *esp -= sizeof(*char);
-  memcpy(*esp, *esp + sizeof(*char), sizeof(*char));
+  *esp -= sizeof(char*);
+  memcpy(*esp, *esp + sizeof(char*), sizeof(char *));
   //hex_dump((uintptr_t)esp, esp, sizeof(char) * 8, true);	
   //// ARG COUNTER ////
   *esp -= sizeof(size_t);
