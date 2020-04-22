@@ -453,11 +453,12 @@ setup_stack (void **esp, char* file_name)
 	struct list_elem elem;
 	char* tok;
   };
-  char *token;
+  const char *token;
   
   char *save_ptr;
   for(token = strtok_r(file_name," ", &save_ptr); token!= NULL; token=strtok_r(NULL," ", &save_ptr)){
 	struct node* excOrArg = malloc(sizeof(struct node));
+	printf("Chichos funciono\n");
 	strlcpy(excOrArg->tok,token,strlen(token));		
 	list_push_front(&execAndArguments, &(excOrArg->elem)); 
   }
