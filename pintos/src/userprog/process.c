@@ -37,9 +37,7 @@ process_execute (const char *file_name)
  
   char *exec_name;
   char *save_ptr;
-  char espacio = ' ';
-  char *empty = espacio;
-  exec_name = strtok_r(file_name,espacio,&save_ptr);
+  exec_name = strtok_r(file_name," ",&save_ptr);
 
   fn_copy = palloc_get_page (0);
   if (fn_copy == NULL)
@@ -455,12 +453,10 @@ setup_stack (void **esp, char* file_name)
 	struct list_elem elem;
 	char* tok;
   };
-  char espacio = ' ';
-  char *empty = espacio;
   char *token;
   
   char *save_ptr;
-  for(token = strtok_r(file_name,espacio, &save_ptr); token!= NULL; token=strtok_r(NULL," ", &save_ptr)){
+  for(token = strtok_r(file_name," ", &save_ptr); token!= NULL; token=strtok_r(NULL," ", &save_ptr)){
 	struct node* excOrArg = malloc(sizeof(struct node));
 	strlcpy(excOrArg->tok,token,strlen(token));		
 	list_push_front(&execAndArguments, &(excOrArg->elem)); 
