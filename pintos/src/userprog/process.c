@@ -446,7 +446,7 @@ setup_stack (void **esp, char* file_name)
 {
 
 ////////ADDED 
-  
+ printf("Estamos enviando %s\n",file_name); 
  struct list execAndArguments;
  list_init(&execAndArguments);
   
@@ -529,7 +529,8 @@ printf("las direcciones del esp son %x\n",*esp);
 	aux += strlen(Node->tok);
 	memcpy(*esp, PHYS_BASE - aux, sizeof(char *)); 
 	iter2 = list_next(iter2);
-    //hex_dump((uintptr_t)esp, esp, sizeof(char) * 8, true);	
+	printf("usando el hexdump en el while \n");
+    hex_dump((uintptr_t)esp, *esp, sizeof(char) * 8, true);	
   }
   printf("SAlinomos de aca \n");
   //// POINTER TO ARG HEAD ////
@@ -537,17 +538,19 @@ printf("las direcciones del esp son %x\n",*esp);
   memcpy(*esp, *esp + sizeof(char*), sizeof(char *));
   //hex_dump((uintptr_t)esp, esp, sizeof(char) * 8, true);	
   //// ARG COUNTER ////
+     hex_dump((uintptr_t)esp, *esp, sizeof(char) * 8, true);	
   *esp -= sizeof(size_t);
   memset(*esp, listSize - 1, sizeof(size_t));
   //hex_dump((uintptr_t)esp, esp, sizeof(char) * 8, true);	
   //// RETURN FAKE ADDRESS ////
+     hex_dump((uintptr_t)esp, *esp, sizeof(char) * 8, true);	
   *esp -= sizeof(size_t);
   memset(*esp, 0, sizeof(size_t));
   //hex_dump((uintptr_t)esp, esp, sizeof(char) * 8, true);	
 
   //// HEXDUMP ////
 
-     hex_dump((uintptr_t)esp, esp, sizeof(char) * 8, true);	
+     hex_dump((uintptr_t)esp, *esp, sizeof(char) * 8, true);	
   //// static void hex_dump((uintptr_t)**, void**, int, bool);
  
   return success;
