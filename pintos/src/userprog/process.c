@@ -458,9 +458,10 @@ setup_stack (void **esp, char* file_name)
   char *save_ptr;
   for(token = strtok_r(file_name," ", &save_ptr); token!= NULL; token=strtok_r(NULL," ", &save_ptr)){
 	struct node* excOrArg = malloc(sizeof(struct node));
-	printf("Chichos funciono\n");
+	printf("Si esta funcionando el script\n");
 	strlcpy(excOrArg->tok,token,strlen(token));		
 	list_push_front(&execAndArguments, &(excOrArg->elem)); 
+	printf("%s",excOrArg->tok);
   }
   
   size_t listSize = list_size(&execAndArguments); 
