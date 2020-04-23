@@ -447,7 +447,7 @@ setup_stack (void **esp, char* file_name)
 {
 
 ////////ADDED 
- printf("Estamos enviando %s\n",file_name); 
+ printf("Estamos enviando :%s\n",file_name); 
  struct list execAndArguments;
  list_init(&execAndArguments);
   
@@ -463,13 +463,14 @@ setup_stack (void **esp, char* file_name)
 	struct node* excOrArg = malloc(sizeof(struct node));
 	//printf("ACA ESTAMOS y lo sabemos antes del strlcpy \n");
 	excOrArg->tok=palloc_get_page (0);
-	//printf("El valor de execOrArg del token es: %s\n",excOrArg->tok);
-	strlcpy(excOrArg->tok,token,strlen(token));		
+	printf("El valor del token es: %s\n", token);
+	strlcpy(excOrArg->tok,token,strlen(token)+1);		
 	printf("El valor de execOrArg del token despues del strcpy es: %s\n",excOrArg->tok);
 	list_push_front(&execAndArguments, &(excOrArg->elem)); 
 	printf("%s\n",excOrArg->tok);
   }
   size_t listSize = list_size(&execAndArguments); 
+  printf("el list size es: %d\n", listSize);
 
 /////////
   uint8_t *kpage;
@@ -486,43 +487,58 @@ setup_stack (void **esp, char* file_name)
       else
         palloc_free_page (kpage);
     }
- printf("El valor del phy es %x\n",PHYS_BASE); 
- 
-  //Podria ser -> void aux = *esp;
+  printf("El valor del PHYS_BASE es %x\n\n\n", PHYS_BASE); 
+  // hasta aqui todo esta bien
   
   struct list_elem* iter= list_begin(&execAndArguments);
+  //printf("la direccion de iter es: \n");
+  //hex_dump((uintptr_t)*iter, *iter, sizeof(char) * 8, true);
   size_t count = 0;
   while(iter != list_end(&execAndArguments)){
-	
 	struct node* Node = list_entry(iter, struct node, elem); 
 	count += strlen(Node->tok);
+	printf("el stack pointer antes de moverse era: \n");
+  	//hex_dump((uintptr_t)esp, esp, sizeof(char) * 8, true);
+  	hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 8, true);
+	printf("\n");
 	*esp -= strlen(Node->tok);
+	printf("el stack pointer despues de moverse era: \n");
+  	//hex_dump((uintptr_t)esp, esp, sizeof(char) * 8, true);
+  	hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 8, true);
+	printf("\n");
 	memcpy(*esp,Node->tok,strlen(Node->tok));
+	printf("el stack pointer luego de copiar es: \n");
 	//hex_dump((uintptr_t)esp, esp, sizeof(char) * 8, true);	
+	hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 8, true);	
 	iter = list_next(iter);	
-	printf("las direcciones del esp son %x\n",*esp);
   }
-	printf("Salimos del  while de primer iter\n");
   size_t aux = count;
 
   //// WORD ALIGN ////
   aux = 4-(aux % 4); 
+  printf("aux es: %d\n", aux);
+  printf("esp antes de mover aux es: \n");
+  hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 8, true);	
   *esp -= aux;
+  printf("esp despues de mover aux es: \n");
+  hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 8, true);	
   memset(*esp,0,aux);
-  //hex_dump((uintptr_t)esp, esp, sizeof(char) * 8, true);	
+  printf("esp luego de copiar aux es: \n");
+  hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 8, true);	
   
-printf("las direcciones del esp son %x\n",*esp);
   ////SENTINEL////
+  printf("esp antes de mover size_t es: \n");
+  hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 8, true);	
   *esp -= sizeof(size_t);
+  printf("esp despues de mover size_t es: \n");
+  hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 8, true);	
   memset(*esp,0,sizeof(size_t));
-  //hex_dump((uintptr_t)esp, esp, sizeof(char) * 8, true);	
-
-printf("las direcciones del esp son %x\n",*esp);
+  printf("esp luego del sentinel es: \n");
+  hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 8, true);	
+  
   aux = 0;
     
-  printf("Ahorita nos encontramos aca\n");
   //// ARGS ADDRESS POINTERS /////
- 
   struct list_elem* iter2 = list_begin(&execAndArguments);
   while (iter2 != list_end(&execAndArguments)){	
 	struct node* Node = list_entry(iter2, struct node, elem); 
@@ -531,7 +547,7 @@ printf("las direcciones del esp son %x\n",*esp);
 	memcpy(*esp, PHYS_BASE - aux, sizeof(char *)); 
 	iter2 = list_next(iter2);
 	printf("usando el hexdump en el while \n");
-    hex_dump((uintptr_t)esp, *esp, sizeof(char) * 8, true);	
+        hex_dump((uintptr_t)esp, *esp, sizeof(char) * 8, true);	
   }
   printf("SAlinomos de aca \n");
   //// POINTER TO ARG HEAD ////
