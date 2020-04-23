@@ -22,6 +22,7 @@
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
 
+
 /* Starts a new thread running a user program loaded from
    FILENAME.  The new thread may be scheduled (and may even exit)
    before process_execute() returns.  Returns the new process's
@@ -37,10 +38,8 @@ process_execute (const char *file_name)
  
   char *exec_name;
   char *save_ptr;
-  char espacio = ' ';
-  char *empty = espacio;
-  exec_name = strtok_r(file_name,espacio,&save_ptr);
-
+  exec_name = strtok_r(file_name," ",&save_ptr);
+  //Ya esta validado printf("El valor de exec_name es: %s",exec_name);
   fn_copy = palloc_get_page (0);
   if (fn_copy == NULL)
     return TID_ERROR;
@@ -99,8 +98,9 @@ start_process (void *file_name_)
    This function will be implemented in problem 2-2.  For now, it
    does nothing. */
 int
-process_wait (tid_t child_tid UNUSED) 
+process_wait (tid_t child_tid) 
 {
+
   while(true){
     thread_yield();
   }
@@ -447,7 +447,7 @@ setup_stack (void **esp, char* file_name)
 {
 
 ////////ADDED 
-  
+ printf("Estamos enviando %s\n",file_name); 
  struct list execAndArguments;
  list_init(&execAndArguments);
   
@@ -455,17 +455,20 @@ setup_stack (void **esp, char* file_name)
 	struct list_elem elem;
 	char* tok;
   };
-  char espacio = ' ';
-  char *empty = espacio;
   char *token;
   
   char *save_ptr;
-  for(token = strtok_r(file_name,espacio, &save_ptr); token!= NULL; token=strtok_r(NULL," ", &save_ptr)){
+  printf("El file name es %s\n",file_name);
+  for(token = strtok_r(file_name," ", &save_ptr); token!= NULL; token=strtok_r(NULL," ", &save_ptr)){
 	struct node* excOrArg = malloc(sizeof(struct node));
+	//printf("ACA ESTAMOS y lo sabemos antes del strlcpy \n");
+	excOrArg->tok=palloc_get_page (0);
+	//printf("El valor de execOrArg del token es: %s\n",excOrArg->tok);
 	strlcpy(excOrArg->tok,token,strlen(token));		
+	printf("El valor de execOrArg del token despues del strcpy es: %s\n",excOrArg->tok);
 	list_push_front(&execAndArguments, &(excOrArg->elem)); 
+	printf("%s\n",excOrArg->tok);
   }
-  
   size_t listSize = list_size(&execAndArguments); 
 
 /////////
@@ -483,22 +486,23 @@ setup_stack (void **esp, char* file_name)
       else
         palloc_free_page (kpage);
     }
-  
-  struct list_elem* iter = list_begin(&execAndArguments);
+ printf("El valor del phy es %x\n",PHYS_BASE); 
  
   //Podria ser -> void aux = *esp;
   
+  struct list_elem* iter= list_begin(&execAndArguments);
   size_t count = 0;
-
   while(iter != list_end(&execAndArguments)){
+	
 	struct node* Node = list_entry(iter, struct node, elem); 
 	count += strlen(Node->tok);
 	*esp -= strlen(Node->tok);
 	memcpy(*esp,Node->tok,strlen(Node->tok));
 	//hex_dump((uintptr_t)esp, esp, sizeof(char) * 8, true);	
 	iter = list_next(iter);	
+	printf("las direcciones del esp son %x\n",*esp);
   }
-
+	printf("Salimos del  while de primer iter\n");
   size_t aux = count;
 
   //// WORD ALIGN ////
@@ -506,39 +510,48 @@ setup_stack (void **esp, char* file_name)
   *esp -= aux;
   memset(*esp,0,aux);
   //hex_dump((uintptr_t)esp, esp, sizeof(char) * 8, true);	
-
+  
+printf("las direcciones del esp son %x\n",*esp);
   ////SENTINEL////
   *esp -= sizeof(size_t);
   memset(*esp,0,sizeof(size_t));
   //hex_dump((uintptr_t)esp, esp, sizeof(char) * 8, true);	
 
+printf("las direcciones del esp son %x\n",*esp);
   aux = 0;
-
+    
+  printf("Ahorita nos encontramos aca\n");
   //// ARGS ADDRESS POINTERS /////
+ 
   struct list_elem* iter2 = list_begin(&execAndArguments);
   while (iter2 != list_end(&execAndArguments)){	
 	struct node* Node = list_entry(iter2, struct node, elem); 
  	*esp -= sizeof(char*);
 	aux += strlen(Node->tok);
 	memcpy(*esp, PHYS_BASE - aux, sizeof(char *)); 
-       //hex_dump((uintptr_t)esp, esp, sizeof(char) * 8, true);	
+	iter2 = list_next(iter2);
+	printf("usando el hexdump en el while \n");
+    hex_dump((uintptr_t)esp, *esp, sizeof(char) * 8, true);	
   }
-
+  printf("SAlinomos de aca \n");
   //// POINTER TO ARG HEAD ////
   *esp -= sizeof(char*);
   memcpy(*esp, *esp + sizeof(char*), sizeof(char *));
   //hex_dump((uintptr_t)esp, esp, sizeof(char) * 8, true);	
   //// ARG COUNTER ////
+     hex_dump((uintptr_t)esp, *esp, sizeof(char) * 8, true);	
   *esp -= sizeof(size_t);
   memset(*esp, listSize - 1, sizeof(size_t));
   //hex_dump((uintptr_t)esp, esp, sizeof(char) * 8, true);	
   //// RETURN FAKE ADDRESS ////
+     hex_dump((uintptr_t)esp, *esp, sizeof(char) * 8, true);	
   *esp -= sizeof(size_t);
   memset(*esp, NULL, sizeof(size_t));
   //hex_dump((uintptr_t)esp, esp, sizeof(char) * 8, true);	
 
   //// HEXDUMP ////
 
+     hex_dump((uintptr_t)esp, *esp, sizeof(char) * 8, true);	
   //// static void hex_dump((uintptr_t)**, void**, int, bool);
  
   return success;
