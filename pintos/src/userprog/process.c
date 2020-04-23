@@ -447,9 +447,8 @@ setup_stack (void **esp, char* file_name)
 {
 
 ////////ADDED 
- printf("Estamos enviando :%s\n",file_name); 
- struct list execAndArguments;
- list_init(&execAndArguments);
+  struct list execAndArguments;
+  list_init(&execAndArguments);
   
   struct node{
 	struct list_elem elem;
@@ -458,19 +457,13 @@ setup_stack (void **esp, char* file_name)
   char *token;
   
   char *save_ptr;
-  printf("El file name es %s\n",file_name);
   for(token = strtok_r(file_name," ", &save_ptr); token!= NULL; token=strtok_r(NULL," ", &save_ptr)){
 	struct node* excOrArg = malloc(sizeof(struct node));
-	//printf("ACA ESTAMOS y lo sabemos antes del strlcpy \n");
 	excOrArg->tok=palloc_get_page (0);
-	printf("El valor del token es: %s\n", token);
-	strlcpy(excOrArg->tok,token,strlen(token)+1);		
-	printf("El valor de execOrArg del token despues del strcpy es: %s\n",excOrArg->tok);
+	strlcpy(excOrArg->tok, token, strlen(token)+1);		
 	list_push_front(&execAndArguments, &(excOrArg->elem)); 
-	printf("%s\n",excOrArg->tok);
   }
   size_t listSize = list_size(&execAndArguments); 
-  printf("el list size es: %d\n", listSize);
 
 /////////
   uint8_t *kpage;
@@ -483,91 +476,82 @@ setup_stack (void **esp, char* file_name)
       if (success)
 	//Puntero al top del stack
         *esp = PHYS_BASE;
-        //hex_dump((uintptr_t)esp, esp, sizeof(char) * 8, true);	
       else
         palloc_free_page (kpage);
     }
-  printf("El valor del PHYS_BASE es %x\n\n\n", PHYS_BASE); 
-  // hasta aqui todo esta bien
+  //////////////////////////////////////////////////////////// hasta aqui todo esta bien
   
   struct list_elem* iter= list_begin(&execAndArguments);
-  //printf("la direccion de iter es: \n");
-  //hex_dump((uintptr_t)*iter, *iter, sizeof(char) * 8, true);
+  
   size_t count = 0;
   while(iter != list_end(&execAndArguments)){
 	struct node* Node = list_entry(iter, struct node, elem); 
 	count += strlen(Node->tok);
-	printf("el stack pointer antes de moverse era: \n");
-  	//hex_dump((uintptr_t)esp, esp, sizeof(char) * 8, true);
-  	hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 8, true);
-	printf("\n");
+	*esp -= sizeof(char);
 	*esp -= strlen(Node->tok);
-	printf("el stack pointer despues de moverse era: \n");
-  	//hex_dump((uintptr_t)esp, esp, sizeof(char) * 8, true);
-  	hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 8, true);
+	printf("el stack pointer despues de moverse es: \n");
+  	hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 32, true);
 	printf("\n");
 	memcpy(*esp,Node->tok,strlen(Node->tok));
 	printf("el stack pointer luego de copiar es: \n");
-	//hex_dump((uintptr_t)esp, esp, sizeof(char) * 8, true);	
-	hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 8, true);	
+	hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 32, true);	
 	iter = list_next(iter);	
+	printf("\n");
   }
   size_t aux = count;
 
   //// WORD ALIGN ////
   aux = 4-(aux % 4); 
-  printf("aux es: %d\n", aux);
-  printf("esp antes de mover aux es: \n");
-  hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 8, true);	
   *esp -= aux;
   printf("esp despues de mover aux es: \n");
-  hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 8, true);	
-  memset(*esp,0,aux);
-  printf("esp luego de copiar aux es: \n");
-  hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 8, true);	
+  hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 32, true);	
+  printf("\n");
   
   ////SENTINEL////
-  printf("esp antes de mover size_t es: \n");
-  hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 8, true);	
   *esp -= sizeof(size_t);
-  printf("esp despues de mover size_t es: \n");
-  hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 8, true);	
-  memset(*esp,0,sizeof(size_t));
-  printf("esp luego del sentinel es: \n");
-  hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 8, true);	
+  printf("esp despues de mover el sentinel es: \n");
+  hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 32, true);	
+  printf("\n");
   
-  aux = 0;
-    
   //// ARGS ADDRESS POINTERS /////
+  size_t cnt2 = 4 + aux;
+  void** espAux = esp;
   struct list_elem* iter2 = list_begin(&execAndArguments);
   while (iter2 != list_end(&execAndArguments)){	
 	struct node* Node = list_entry(iter2, struct node, elem); 
- 	*esp -= sizeof(char*);
-	aux += strlen(Node->tok);
-	memcpy(*esp, PHYS_BASE - aux, sizeof(char *)); 
+ 	*esp -= sizeof(void *);
+	hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 32, true);
+	printf("\n");	
+	cnt2 += sizeof(void *);
+	*espAux += cnt2;
+	memcpy(*esp - cnt2, espAux, sizeof(void *));
+	*esp -= cnt2; 
 	iter2 = list_next(iter2);
-	printf("usando el hexdump en el while \n");
-        hex_dump((uintptr_t)esp, *esp, sizeof(char) * 8, true);	
+        printf("Despues de pegar el auxesp: \n");
+	hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 32, true);
+	printf("\n");	
   }
-  printf("SAlinomos de aca \n");
   //// POINTER TO ARG HEAD ////
+  *esp -= sizeof(char*); 
+  espAux = esp;
+  *espAux += sizeof(char*);
+  memcpy(*esp - sizeof(char*), espAux, sizeof(char *));
   *esp -= sizeof(char*);
-  memcpy(*esp, *esp + sizeof(char*), sizeof(char *));
-  //hex_dump((uintptr_t)esp, esp, sizeof(char) * 8, true);	
+  hex_dump((uintptr_t)esp, *esp, sizeof(char) * 32, true);	
+  printf("\n");
   //// ARG COUNTER ////
-     hex_dump((uintptr_t)esp, *esp, sizeof(char) * 8, true);	
   *esp -= sizeof(size_t);
-  memset(*esp, listSize - 1, sizeof(size_t));
-  //hex_dump((uintptr_t)esp, esp, sizeof(char) * 8, true);	
+  memset(*esp, listSize, sizeof(char));
+  hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 32, true);	
+  printf("\n");
   //// RETURN FAKE ADDRESS ////
-     hex_dump((uintptr_t)esp, *esp, sizeof(char) * 8, true);	
   *esp -= sizeof(size_t);
   memset(*esp, NULL, sizeof(size_t));
-  //hex_dump((uintptr_t)esp, esp, sizeof(char) * 8, true);	
+  hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 64, true);	
+  printf("\n");
 
   //// HEXDUMP ////
 
-     hex_dump((uintptr_t)esp, *esp, sizeof(char) * 8, true);	
   //// static void hex_dump((uintptr_t)**, void**, int, bool);
  
   return success;
