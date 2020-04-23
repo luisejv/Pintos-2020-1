@@ -4,8 +4,21 @@
 #include "process.h"
 
 void syscall_init (void);
-int write(int, void*, unsigned);
-void exit(int status);
-pid_t exec(const char* cmd_line); 
+
+//SYSCALLS
+
+void sys_halt (void);
+void sys_exit (int);
+pid_t sys_execute (const char *);
+int sys_wait (pid_t);
+bool sys_create (const char *, unsigned);
+bool sys_remove (const char *);
+int sys_open (const char *);
+int sys_filesize (int);
+int sys_read (int, void *, unsigned);
+int sys_write (int, const void *, unsigned);
+void sys_seek (int, unsigned);
+unsigned sys_tell (int);
+void sys_close (int);
 
 #endif /* userprog/syscall.h */
