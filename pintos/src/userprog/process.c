@@ -534,7 +534,7 @@ setup_stack (void **esp, char* file_name)
   //hex_dump((uintptr_t)esp, esp, sizeof(char) * 8, true);	
   //// RETURN FAKE ADDRESS ////
   *esp -= sizeof(size_t);
-  memset(*esp, 0, sizeof(size_t));
+  memset(*esp, NULL, sizeof(size_t));
   //hex_dump((uintptr_t)esp, esp, sizeof(char) * 8, true);	
 
   //// HEXDUMP ////
