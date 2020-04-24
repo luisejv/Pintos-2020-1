@@ -4,6 +4,7 @@
 #include <round.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <list.h>
 #include <string.h>
 #include "userprog/gdt.h"
 #include "userprog/pagedir.h"
@@ -21,6 +22,7 @@
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
 
+
 /* Starts a new thread running a user program loaded from
    FILENAME.  The new thread may be scheduled (and may even exit)
    before process_execute() returns.  Returns the new process's
@@ -30,16 +32,22 @@ process_execute (const char *file_name)
 {
   char *fn_copy;
   tid_t tid;
-
+   
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
+ 
+  char *exec_name;
+  char *save_ptr;
+  exec_name = strtok_r(file_name," ",&save_ptr);
+  //Ya esta validado printf("El valor de exec_name es: %s",exec_name);
   fn_copy = palloc_get_page (0);
   if (fn_copy == NULL)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
 
   /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
+  //Cambiamos el file_name por exec_name
+  tid = thread_create (exec_name, PRI_DEFAULT, start_process, fn_copy);
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy); 
   return tid;
@@ -50,18 +58,22 @@ process_execute (const char *file_name)
 static void
 start_process (void *file_name_)
 {
+
   char *file_name = file_name_;
   struct intr_frame if_;
   bool success;
-
+ 
   /* Initialize interrupt frame and load executable. */
   memset (&if_, 0, sizeof if_);
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
+  
+  //Tenemos que separar un stack para el user program  
   success = load (file_name, &if_.eip, &if_.esp);
 
   /* If load failed, quit. */
+  //REVISAR ESTO
   palloc_free_page (file_name);
   if (!success) 
     thread_exit ();
@@ -86,9 +98,12 @@ start_process (void *file_name_)
    This function will be implemented in problem 2-2.  For now, it
    does nothing. */
 int
-process_wait (tid_t child_tid UNUSED) 
+process_wait (tid_t child_tid) 
 {
-  return -1;
+
+  while(true){
+    thread_yield();
+  }
 }
 
 /* Free the current process's resources. */
@@ -195,7 +210,7 @@ struct Elf32_Phdr
 #define PF_W 2          /* Writable. */
 #define PF_R 4          /* Readable. */
 
-static bool setup_stack (void **esp);
+static bool setup_stack (void **esp, char *file_name);
 static bool validate_segment (const struct Elf32_Phdr *, struct file *);
 static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
                           uint32_t read_bytes, uint32_t zero_bytes,
@@ -302,7 +317,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
     }
 
   /* Set up stack. */
-  if (!setup_stack (esp))
+  if (!setup_stack (esp, file_name))
     goto done;
 
   /* Start address. */
@@ -426,9 +441,31 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 
 /* Create a minimal stack by mapping a zeroed page at the top of
    user virtual memory. */
+//Insertamos un argumento adicional al setup_stack
 static bool
-setup_stack (void **esp) 
+setup_stack (void **esp, char* file_name) 
 {
+
+////////ADDED 
+  struct list execAndArguments;
+  list_init(&execAndArguments);
+  
+  struct node{
+	struct list_elem elem;
+	char* tok;
+  };
+  char *token;
+  
+  char *save_ptr;
+  for(token = strtok_r(file_name," ", &save_ptr); token!= NULL; token=strtok_r(NULL," ", &save_ptr)){
+	struct node* excOrArg = malloc(sizeof(struct node));
+	excOrArg->tok=palloc_get_page (0);
+	strlcpy(excOrArg->tok, token, strlen(token)+1);		
+	list_push_front(&execAndArguments, &(excOrArg->elem)); 
+  }
+  size_t listSize = list_size(&execAndArguments); 
+
+/////////
   uint8_t *kpage;
   bool success = false;
 
@@ -437,10 +474,86 @@ setup_stack (void **esp)
     {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
       if (success)
+	//Puntero al top del stack
         *esp = PHYS_BASE;
       else
         palloc_free_page (kpage);
     }
+  //////////////////////////////////////////////////////////// hasta aqui todo esta bien
+  
+  struct list_elem* iter= list_begin(&execAndArguments);
+  
+  size_t count = 0;
+  while(iter != list_end(&execAndArguments)){
+	struct node* Node = list_entry(iter, struct node, elem); 
+	count += strlen(Node->tok);
+	*esp -= sizeof(char);
+	*esp -= strlen(Node->tok);
+	printf("el stack pointer despues de moverse es: \n");
+  	hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 32, true);
+	printf("\n");
+	memcpy(*esp,Node->tok,strlen(Node->tok));
+	printf("el stack pointer luego de copiar es: \n");
+	hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 32, true);	
+	iter = list_next(iter);	
+	printf("\n");
+  }
+  size_t aux = count;
+
+  //// WORD ALIGN ////
+  aux = 4-(aux % 4); 
+  *esp -= aux;
+  printf("esp despues de mover aux es: \n");
+  hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 32, true);	
+  printf("\n");
+  
+  ////SENTINEL////
+  *esp -= sizeof(size_t);
+  printf("esp despues de mover el sentinel es: \n");
+  hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 32, true);	
+  printf("\n");
+  
+  //// ARGS ADDRESS POINTERS /////
+  size_t cnt2 = 4 + aux;
+  void** espAux = esp;
+  struct list_elem* iter2 = list_begin(&execAndArguments);
+  while (iter2 != list_end(&execAndArguments)){	
+	struct node* Node = list_entry(iter2, struct node, elem); 
+ 	*esp -= sizeof(void *);
+	hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 32, true);
+	printf("\n");	
+	cnt2 += sizeof(void *);
+	*espAux += cnt2;
+	memcpy(*esp - cnt2, espAux, sizeof(void *));
+	*esp -= cnt2; 
+	iter2 = list_next(iter2);
+        printf("Despues de pegar el auxesp: \n");
+	hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 32, true);
+	printf("\n");	
+  }
+  //// POINTER TO ARG HEAD ////
+  *esp -= sizeof(char*); 
+  espAux = esp;
+  *espAux += sizeof(char*);
+  memcpy(*esp - sizeof(char*), espAux, sizeof(char *));
+  *esp -= sizeof(char*);
+  hex_dump((uintptr_t)esp, *esp, sizeof(char) * 32, true);	
+  printf("\n");
+  //// ARG COUNTER ////
+  *esp -= sizeof(size_t);
+  memset(*esp, listSize, sizeof(char));
+  hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 32, true);	
+  printf("\n");
+  //// RETURN FAKE ADDRESS ////
+  *esp -= sizeof(size_t);
+  memset(*esp, NULL, sizeof(size_t));
+  hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 64, true);	
+  printf("\n");
+
+  //// HEXDUMP ////
+
+  //// static void hex_dump((uintptr_t)**, void**, int, bool);
+ 
   return success;
 }
 
