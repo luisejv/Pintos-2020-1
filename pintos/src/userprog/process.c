@@ -38,7 +38,7 @@ process_execute (const char *file_name)
  
   char *exec_name;
   char *save_ptr;
-  exec_name = strtok_r(file_name," ",&save_ptr);
+  //exec_name = strtok_r(file_name," ",&save_ptr);
   //Ya esta validado printf("El valor de exec_name es: %s",exec_name);
   fn_copy = palloc_get_page (0);
   if (fn_copy == NULL)
@@ -47,7 +47,7 @@ process_execute (const char *file_name)
 
   /* Create a new thread to execute FILE_NAME. */
   //Cambiamos el file_name por exec_name
-  tid = thread_create (exec_name, PRI_DEFAULT, start_process, fn_copy);
+  tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy); 
   return tid;
@@ -223,6 +223,7 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
 bool
 load (const char *file_name, void (**eip) (void), void **esp) 
 {
+  printf("ENTRE A LOAD\n");
   struct thread *t = thread_current ();
   struct Elf32_Ehdr ehdr;
   struct file *file = NULL;
@@ -235,9 +236,26 @@ load (const char *file_name, void (**eip) (void), void **esp)
   if (t->pagedir == NULL) 
     goto done;
   process_activate ();
+  printf("PASE PROCESS_ACTIVATE\n");
 
   /* Open executable file. */
-  file = filesys_open (file_name);
+  char* aux;
+  int count = 0;
+  int j = 0;
+  for(; j < strlen(file_name); j++){
+    if(file_name[j] == ' '){
+      break;
+    }
+    count++;
+  }
+  
+  char* aux2;
+  aux2 = palloc_get_page (0);
+  strlcpy(aux2,file_name,count+1);
+  
+  file = filesys_open (aux2);
+
+  //setup_stack(esp,file_name);
   if (file == NULL) 
     {
       printf ("load: %s: open failed\n", file_name);
@@ -329,6 +347,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   /* We arrive here whether the load is successful or not. */
   file_close (file);
   return success;
+  printf("PASE PROCESS_ACTIVATE\n");
 }
 
 /* load() helpers. */
