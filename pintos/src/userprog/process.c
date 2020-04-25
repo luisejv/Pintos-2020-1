@@ -97,13 +97,22 @@ start_process (void *file_name_)
 
    This function will be implemented in problem 2-2.  For now, it
    does nothing. */
+
 int
 process_wait (tid_t child_tid) 
 {
+    /*  
+    while(true){
+          thread_yield();
+    }*/
+    //printf("ACA SI ESTOY\n");
+	
+    //printf("SI SALIO LLEGO ACAAAAAA\n");
+    sema_down((&thread_current()->sema_actual));
+        //  
+	
+    //printf("SI SALIO LLEGO ACAAAAAA\n");
 
-  while(true){
-    thread_yield();
-  }
 }
 
 /* Free the current process's resources. */
@@ -223,7 +232,7 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
 bool
 load (const char *file_name, void (**eip) (void), void **esp) 
 {
-  printf("ENTRE A LOAD\n");
+  //printf("ENTRE A LOAD\n");
   struct thread *t = thread_current ();
   struct Elf32_Ehdr ehdr;
   struct file *file = NULL;
@@ -236,7 +245,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   if (t->pagedir == NULL) 
     goto done;
   process_activate ();
-  printf("PASE PROCESS_ACTIVATE\n");
+  //printf("PASE PROCESS_ACTIVATE\n");
 
   /* Open executable file. */
   char* aux;
@@ -508,29 +517,29 @@ setup_stack (void **esp, char* file_name)
 	count += strlen(Node->tok);
 	*esp -= sizeof(char);
 	*esp -= strlen(Node->tok);
-	printf("el stack pointer despues de moverse es: \n");
-  	hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 32, true);
-	printf("\n");
+//	printf("el stack pointer despues de moverse es: \n");
+//hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 32, true);
+	//printf("\n");
 	memcpy(*esp,Node->tok,strlen(Node->tok));
-	printf("el stack pointer luego de copiar es: \n");
-	hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 32, true);	
+	//printf("el stack pointer luego de copiar es: \n");
+	//hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 32, true);	
 	iter = list_next(iter);	
-	printf("\n");
+	//printf("\n");
   }
   size_t aux = count;
 
   //// WORD ALIGN ////
   aux = 4-(aux % 4); 
   *esp -= aux;
-  printf("esp despues de mover aux es: \n");
-  hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 32, true);	
-  printf("\n");
+  //printf("esp despues de mover aux es: \n");
+  //hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 32, true);	
+  //printf("\n");
   
   ////SENTINEL////
   *esp -= sizeof(size_t);
-  printf("esp despues de mover el sentinel es: \n");
-  hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 32, true);	
-  printf("\n");
+  //printf("esp despues de mover el sentinel es: \n");
+  //hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 32, true);	
+  //printf("\n");
   
   //// ARGS ADDRESS POINTERS /////
   size_t cnt2 = 4 + aux;
@@ -539,16 +548,16 @@ setup_stack (void **esp, char* file_name)
   while (iter2 != list_end(&execAndArguments)){	
 	struct node* Node = list_entry(iter2, struct node, elem); 
  	*esp -= sizeof(void *);
-	hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 32, true);
-	printf("\n");	
+	//hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 32, true);
+	//printf("\n");	
 	cnt2 += sizeof(void *);
 	*espAux += cnt2;
 	memcpy(*esp - cnt2, espAux, sizeof(void *));
 	*esp -= cnt2; 
 	iter2 = list_next(iter2);
-        printf("Despues de pegar el auxesp: \n");
-	hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 32, true);
-	printf("\n");	
+        //printf("Despues de pegar el auxesp: \n");
+	//hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 32, true);
+	//printf("\n");	
   }
   //// POINTER TO ARG HEAD ////
   *esp -= sizeof(char*); 
@@ -556,18 +565,18 @@ setup_stack (void **esp, char* file_name)
   *espAux += sizeof(char*);
   memcpy(*esp - sizeof(char*), espAux, sizeof(char *));
   *esp -= sizeof(char*);
-  hex_dump((uintptr_t)esp, *esp, sizeof(char) * 32, true);	
-  printf("\n");
+  //hex_dump((uintptr_t)esp, *esp, sizeof(char) * 32, true);	
+  //printf("\n");
   //// ARG COUNTER ////
   *esp -= sizeof(size_t);
   memset(*esp, listSize, sizeof(char));
-  hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 32, true);	
-  printf("\n");
+  //hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 32, true);	
+  //printf("\n");
   //// RETURN FAKE ADDRESS ////
   *esp -= sizeof(size_t);
   memset(*esp, NULL, sizeof(size_t));
-  hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 64, true);	
-  printf("\n");
+  //hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 64, true);	
+  //printf("\n");
 
   //// HEXDUMP ////
 

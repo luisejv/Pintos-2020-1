@@ -100,6 +100,10 @@ struct thread
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
+	//creamos un semaphore para el process wait
+    struct semaphore *sema_actual;
+    //thread necesario para que el thread parent no sea infinito
+    struct thread *parent;
   };
 
 /* If false (default), use round-robin scheduler.
