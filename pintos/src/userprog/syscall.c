@@ -64,6 +64,7 @@ syscall_handler (struct intr_frame *f)
       void* buffer = (void*)(*((int*)f->esp+2));
       unsigned size = *((unsigned*)f->esp+3);
       f->eax = write(fd,buffer,size);
+      putbuf(buffer,size);
     }
    
     case SYS_SEEK:{
@@ -79,7 +80,7 @@ syscall_handler (struct intr_frame *f)
     }
     //Faltan implementar los others sys_calls
   }
-  printf ("system call!\n");
+  //printf ("system call!\n");
   thread_exit ();
 }
 

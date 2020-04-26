@@ -69,6 +69,7 @@ sema_down (struct semaphore *sema)
   ASSERT (!intr_context ());
 
   old_level = intr_disable (); //Disables the interrupt and also stores it
+
   while (sema->value == 0) 
     {
       list_push_back (&sema->waiters, &thread_current ()->elem);
@@ -112,7 +113,6 @@ void
 sema_up (struct semaphore *sema) 
 {
   enum intr_level old_level;
-
   ASSERT (sema != NULL);
 
   old_level = intr_disable ();

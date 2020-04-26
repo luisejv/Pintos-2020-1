@@ -112,7 +112,7 @@ thread_start (void)
 
   /* Start preemptive thread scheduling. */
   intr_enable ();
-
+  
   /* Wait for the idle thread to initialize idle_thread. */
   sema_down (&idle_started);
 }
@@ -126,7 +126,7 @@ thread_tick (void)
 
   /* Update statistics. */
   if (t == idle_thread)
-    idle_ticks++;
+   idle_ticks++;
 #ifdef USERPROG
   else if (t->pagedir != NULL)
     user_ticks++;
@@ -189,6 +189,9 @@ thread_create (const char *name, int priority,
   kf->function = function;
   kf->aux = aux;
 
+  sema_init(&(thread_current()->sema_actual),0);
+  t->parent = thread_current();
+  
   /* Stack frame for switch_entry(). */
   ef = alloc_frame (t, sizeof *ef);
   ef->eip = (void (*) (void)) kernel_thread;
@@ -280,6 +283,8 @@ thread_tid (void)
 void
 thread_exit (void) 
 {
+
+  sema_up(&(thread_current()->parent)->sema_actual);
   ASSERT (!intr_context ());
 
 #ifdef USERPROG

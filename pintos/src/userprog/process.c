@@ -18,7 +18,7 @@
 #include "threads/palloc.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
-
+#define DEBUGG 1
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
 
@@ -38,8 +38,8 @@ process_execute (const char *file_name)
  
   char *exec_name;
   char *save_ptr;
-  exec_name = strtok_r(file_name," ",&save_ptr);
-  //Ya esta validado printf("El valor de exec_name es: %s",exec_name);
+  //exec_name = strtok_r(file_name," ",&save_ptr);
+  //Ya esta validado //printf("El valor de exec_name es: %s",exec_name);
   fn_copy = palloc_get_page (0);
   if (fn_copy == NULL)
     return TID_ERROR;
@@ -47,7 +47,7 @@ process_execute (const char *file_name)
 
   /* Create a new thread to execute FILE_NAME. */
   //Cambiamos el file_name por exec_name
-  tid = thread_create (exec_name, PRI_DEFAULT, start_process, fn_copy);
+  tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy); 
   return tid;
@@ -97,13 +97,22 @@ start_process (void *file_name_)
 
    This function will be implemented in problem 2-2.  For now, it
    does nothing. */
+
 int
 process_wait (tid_t child_tid) 
 {
+    /*  
+    while(true){
+          thread_yield();
+    }*/
+    ////printf("ACA SI ESTOY\n");
+	
+    ////printf("SI SALIO LLEGO ACAAAAAA\n");
+    sema_down((&thread_current()->sema_actual));
+        //  
+	
+    ////printf("SI SALIO LLEGO ACAAAAAA\n");
 
-  while(true){
-    thread_yield();
-  }
 }
 
 /* Free the current process's resources. */
@@ -223,6 +232,7 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
 bool
 load (const char *file_name, void (**eip) (void), void **esp) 
 {
+  //printf("ENTRE A LOAD\n");
   struct thread *t = thread_current ();
   struct Elf32_Ehdr ehdr;
   struct file *file = NULL;
@@ -235,9 +245,26 @@ load (const char *file_name, void (**eip) (void), void **esp)
   if (t->pagedir == NULL) 
     goto done;
   process_activate ();
+  //printf("PASE PROCESS_ACTIVATE\n");
 
   /* Open executable file. */
-  file = filesys_open (file_name);
+  char* aux;
+  int count = 0;
+  int j = 0;
+  for(; j < strlen(file_name); j++){
+    if(file_name[j] == ' '){
+      break;
+    }
+    count++;
+  }
+  
+  char* aux2;
+  aux2 = palloc_get_page (0);
+  strlcpy(aux2,file_name,count+1);
+  
+  file = filesys_open (aux2);
+
+  //setup_stack(esp,file_name);
   if (file == NULL) 
     {
       printf ("load: %s: open failed\n", file_name);
@@ -329,6 +356,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   /* We arrive here whether the load is successful or not. */
   file_close (file);
   return success;
+  //printf("PASE PROCESS_ACTIVATE\n");
 }
 
 /* load() helpers. */
@@ -486,32 +514,34 @@ setup_stack (void **esp, char* file_name)
   size_t count = 0;
   while(iter != list_end(&execAndArguments)){
 	struct node* Node = list_entry(iter, struct node, elem); 
-	count += strlen(Node->tok);
+	count += strlen(Node->tok)+1;
 	*esp -= sizeof(char);
 	*esp -= strlen(Node->tok);
-	printf("el stack pointer despues de moverse es: \n");
-  	hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 32, true);
-	printf("\n");
+//	printf("el stack pointer despues de moverse es: \n");
+    if (DEBUGG) {hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 64, true);
+	printf("\n");}
 	memcpy(*esp,Node->tok,strlen(Node->tok));
-	printf("el stack pointer luego de copiar es: \n");
-	hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 32, true);	
+    if (DEBUGG) {hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 64, true);
+	printf("\n");}
 	iter = list_next(iter);	
-	printf("\n");
   }
   size_t aux = count;
 
   //// WORD ALIGN ////
   aux = 4-(aux % 4); 
   *esp -= aux;
+ if (DEBUGG) {
   printf("esp despues de mover aux es: \n");
-  hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 32, true);	
-  printf("\n");
+  hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 64, true);
+  printf("\n");}
   
   ////SENTINEL////
   *esp -= sizeof(size_t);
+if (DEBUGG) {
   printf("esp despues de mover el sentinel es: \n");
-  hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 32, true);	
-  printf("\n");
+  hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 64, true);
+  printf("\n");}
+
   
   //// ARGS ADDRESS POINTERS /////
   size_t cnt2 = 4 + aux;
@@ -520,16 +550,24 @@ setup_stack (void **esp, char* file_name)
   while (iter2 != list_end(&execAndArguments)){	
 	struct node* Node = list_entry(iter2, struct node, elem); 
  	*esp -= sizeof(void *);
-	hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 32, true);
-	printf("\n");	
+
+    if (DEBUGG) {
+        hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 64, true);
+        printf("\n");
+        }
+
 	cnt2 += sizeof(void *);
-	*espAux += cnt2;
+	*espAux += strlen(Node->tok)+1;
 	memcpy(*esp - cnt2, espAux, sizeof(void *));
 	*esp -= cnt2; 
 	iter2 = list_next(iter2);
-        printf("Despues de pegar el auxesp: \n");
-	hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 32, true);
-	printf("\n");	
+
+    if (DEBUGG) {
+      hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 64, true);
+      printf("\n");
+      printf("Despues de pegar el auxesp: \n");
+    }
+
   }
   //// POINTER TO ARG HEAD ////
   *esp -= sizeof(char*); 
@@ -537,22 +575,27 @@ setup_stack (void **esp, char* file_name)
   *espAux += sizeof(char*);
   memcpy(*esp - sizeof(char*), espAux, sizeof(char *));
   *esp -= sizeof(char*);
-  hex_dump((uintptr_t)esp, *esp, sizeof(char) * 32, true);	
-  printf("\n");
+
+if (DEBUGG) {hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 64, true);
+	printf("\n");}
   //// ARG COUNTER ////
   *esp -= sizeof(size_t);
   memset(*esp, listSize, sizeof(char));
-  hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 32, true);	
-  printf("\n");
+
+if (DEBUGG) {hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 64, true);
+	printf("\n");}
   //// RETURN FAKE ADDRESS ////
   *esp -= sizeof(size_t);
   memset(*esp, NULL, sizeof(size_t));
-  hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 64, true);	
-  printf("\n");
+if (DEBUGG) {
+  printf("final hexdump\n");
+  hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 64, true);
+  printf("\n");}
+
 
   //// HEXDUMP ////
 
-  //// static void hex_dump((uintptr_t)**, void**, int, bool);
+  // hex_dump((uintptr_t)**, void**, int, bool);
  
   return success;
 }
