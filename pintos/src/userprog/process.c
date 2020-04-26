@@ -18,7 +18,7 @@
 #include "threads/palloc.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
-#define DEBUGG 1
+#define DEBUGG 0
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
 
@@ -525,6 +525,7 @@ setup_stack (void **esp, char* file_name)
 	printf("\n");}
 	iter = list_next(iter);	
   }
+  if (DEBUGG) printf("%d\n", count);
   size_t aux = count;
 
   //// WORD ALIGN ////
@@ -544,7 +545,9 @@ if (DEBUGG) {
 
   
   //// ARGS ADDRESS POINTERS /////
-  size_t cnt2 = 4 + aux;
+  if (DEBUGG) printf("%d\n", count);
+  count += aux + sizeof(size_t);
+  if (DEBUGG) printf("%d\n", count);
   void** espAux = esp;
   struct list_elem* iter2 = list_begin(&execAndArguments);
   while (iter2 != list_end(&execAndArguments)){	
@@ -554,12 +557,17 @@ if (DEBUGG) {
     if (DEBUGG) {
         hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 64, true);
         printf("\n");
+	printf("%d\n", count);
         }
-
-	cnt2 += sizeof(void *);
-	*espAux += strlen(Node->tok)+1;
-	memcpy(*esp - cnt2, espAux, sizeof(void *));
-	*esp -= cnt2; 
+	
+	count += sizeof(void *) - strlen(Node->tok) -1;
+	if (DEBUGG) {
+	printf("%d\n", count);
+	printf("%p\n", *esp+count);
+	}
+	*esp += count;
+	memcpy(*esp - count, esp, sizeof(void *));
+	*esp -= count; 
 	iter2 = list_next(iter2);
 
     if (DEBUGG) {
