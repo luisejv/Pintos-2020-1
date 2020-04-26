@@ -558,18 +558,18 @@ if (DEBUGG) {
     if (DEBUGG) {
         hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 64, true);
         printf("\n");
-  printf("%d\n", count);
+	printf("%d\n", count);
         }
-  
-  count += sizeof(void *) - strlen(Node->tok) -1;
-  if (DEBUGG) {
-  printf("%d\n", count);
-  printf("%p\n", *esp+count);
-  }
-  *esp += count;
-  memcpy(*esp - count, esp, sizeof(void *));
-  *esp -= count; 
-  iter2 = list_next(iter2);
+	
+	count += sizeof(void *) - strlen(Node->tok) -1;
+	if (DEBUGG) {
+	printf("%d\n", count);
+	printf("%p\n", *esp+count);
+	}
+	*esp += count;
+	memcpy(*esp - count, esp, sizeof(void *));
+	*esp -= count; 
+	iter2 = list_next(iter2);
 
     if (DEBUGG) {
       hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 64, true);
