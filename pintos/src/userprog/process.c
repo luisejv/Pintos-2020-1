@@ -18,7 +18,7 @@
 #include "threads/palloc.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
-#define DEBUGG 1
+#define DEBUGG 0
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
 
@@ -108,6 +108,7 @@ process_wait (tid_t child_tid)
     ////printf("ACA SI ESTOY\n");
 	
     ////printf("SI SALIO LLEGO ACAAAAAA\n");
+    sema_init(&(thread_current()->sema_actual),0);
     sema_down((&thread_current()->sema_actual));
         //  
 	
@@ -479,17 +480,17 @@ setup_stack (void **esp, char* file_name)
   list_init(&execAndArguments);
   
   struct node{
-	struct list_elem elem;
-	char* tok;
+  struct list_elem elem;
+  char* tok;
   };
   char *token;
   
   char *save_ptr;
   for(token = strtok_r(file_name," ", &save_ptr); token!= NULL; token=strtok_r(NULL," ", &save_ptr)){
-	struct node* excOrArg = malloc(sizeof(struct node));
-	excOrArg->tok=palloc_get_page (0);
-	strlcpy(excOrArg->tok, token, strlen(token)+1);		
-	list_push_front(&execAndArguments, &(excOrArg->elem)); 
+  struct node* excOrArg = malloc(sizeof(struct node));
+  excOrArg->tok=palloc_get_page (0);
+  strlcpy(excOrArg->tok, token, strlen(token)+1);   
+  list_push_front(&execAndArguments, &(excOrArg->elem)); 
   }
   size_t listSize = list_size(&execAndArguments); 
 
@@ -502,7 +503,7 @@ setup_stack (void **esp, char* file_name)
     {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
       if (success)
-	//Puntero al top del stack
+  //Puntero al top del stack
         *esp = PHYS_BASE;
       else
         palloc_free_page (kpage);
@@ -513,18 +514,19 @@ setup_stack (void **esp, char* file_name)
   
   size_t count = 0;
   while(iter != list_end(&execAndArguments)){
-	struct node* Node = list_entry(iter, struct node, elem); 
-	count += strlen(Node->tok)+1;
-	*esp -= sizeof(char);
-	*esp -= strlen(Node->tok);
-//	printf("el stack pointer despues de moverse es: \n");
+  struct node* Node = list_entry(iter, struct node, elem); 
+  count += strlen(Node->tok)+1;
+  *esp -= sizeof(char);
+  *esp -= strlen(Node->tok);
+//  printf("el stack pointer despues de moverse es: \n");
     if (DEBUGG) {hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 64, true);
-	printf("\n");}
-	memcpy(*esp,Node->tok,strlen(Node->tok));
+  printf("\n");}
+  memcpy(*esp,Node->tok,strlen(Node->tok));
     if (DEBUGG) {hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 64, true);
-	printf("\n");}
-	iter = list_next(iter);	
+  printf("\n");}
+  iter = list_next(iter); 
   }
+  if (DEBUGG) printf("%d\n", count);
   size_t aux = count;
 
   //// WORD ALIGN ////
@@ -544,23 +546,30 @@ if (DEBUGG) {
 
   
   //// ARGS ADDRESS POINTERS /////
-  size_t cnt2 = 4 + aux;
+  if (DEBUGG) printf("%d\n", count);
+  count += aux + sizeof(size_t);
+  if (DEBUGG) printf("%d\n", count);
   void** espAux = esp;
   struct list_elem* iter2 = list_begin(&execAndArguments);
-  while (iter2 != list_end(&execAndArguments)){	
-	struct node* Node = list_entry(iter2, struct node, elem); 
- 	*esp -= sizeof(void *);
+  while (iter2 != list_end(&execAndArguments)){ 
+  struct node* Node = list_entry(iter2, struct node, elem); 
+  *esp -= sizeof(void *);
 
     if (DEBUGG) {
         hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 64, true);
         printf("\n");
+  printf("%d\n", count);
         }
-
-	cnt2 += sizeof(void *);
-	*espAux += strlen(Node->tok)+1;
-	memcpy(*esp - cnt2, espAux, sizeof(void *));
-	*esp -= cnt2; 
-	iter2 = list_next(iter2);
+  
+  count += sizeof(void *) - strlen(Node->tok) -1;
+  if (DEBUGG) {
+  printf("%d\n", count);
+  printf("%p\n", *esp+count);
+  }
+  *esp += count;
+  memcpy(*esp - count, esp, sizeof(void *));
+  *esp -= count; 
+  iter2 = list_next(iter2);
 
     if (DEBUGG) {
       hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 64, true);
@@ -577,13 +586,13 @@ if (DEBUGG) {
   *esp -= sizeof(char*);
 
 if (DEBUGG) {hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 64, true);
-	printf("\n");}
+  printf("\n");}
   //// ARG COUNTER ////
   *esp -= sizeof(size_t);
   memset(*esp, listSize, sizeof(char));
 
 if (DEBUGG) {hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 64, true);
-	printf("\n");}
+  printf("\n");}
   //// RETURN FAKE ADDRESS ////
   *esp -= sizeof(size_t);
   memset(*esp, NULL, sizeof(size_t));

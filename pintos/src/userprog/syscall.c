@@ -24,7 +24,7 @@ syscall_handler (struct intr_frame *f)
     }
 
     case SYS_EXIT:{
-      printf("Exiting process: %s\n", thread_current()->name);
+      //printf("Exiting process: %s\n", thread_current()->name);
       int status = *((int*)f->esp+1);
       sys_exit(status); 
       break;
@@ -81,12 +81,10 @@ syscall_handler (struct intr_frame *f)
     //Faltan implementar los others sys_calls
   }
   //printf ("system call!\n");
-  thread_exit ();
 }
 
 void 
 sys_halt (void){
-  printf("Halt SYSCALL");
 }
 
 void 
@@ -104,58 +102,48 @@ sys_execute(const char* cmd_line){
 
 int
 sys_wait (pid_t pid){
-  printf("Wait SYSCALL"); 
   return 1;
 }
 
 bool
 sys_create (const char * file, unsigned initial_size){
-  printf("CREATE SYSCALL");
   return 1;
 }
 
 bool
 sys_remove (const char *file){
-  printf("REMOVE SYSCALL");
   return 1;    
 } 
 
 int
 sys_open (const char * file){
-  printf("OPEN SYSCALL");
   return 1;
 }
 
 int
 sys_filesize (int fd){
-  printf("FILESIZE SYSCALL");
   return 1;
 }
 
 int
 sys_read (int fd, void * buffer, unsigned size){
-  printf("READ SYSCALL");
   return 1;
 }
 
 int
 write (int fd, void* buffer, unsigned size){
-  printf("WRITE SYSCALL\n");
   return 1;
 }
 
 void
 sys_seek (int fd, unsigned position){
-  printf("SEEK SYSCALL");
 }
 
 unsigned sys_tell (int fd){
-  printf("TELL SYSCALL");
   return 1;
 }
 
 void sys_close (int fd){
-  printf("CLOSE SYSCALL");
 }
 
 

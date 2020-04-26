@@ -189,7 +189,6 @@ thread_create (const char *name, int priority,
   kf->function = function;
   kf->aux = aux;
 
-  sema_init(&(thread_current()->sema_actual),0);
   t->parent = thread_current();
   
   /* Stack frame for switch_entry(). */
@@ -284,7 +283,9 @@ void
 thread_exit (void) 
 {
 
-  sema_up(&(thread_current()->parent)->sema_actual);
+  if(thread_current()->parent != NULL){
+    sema_up(&(thread_current()->parent)->sema_actual);
+  }
   ASSERT (!intr_context ());
 
 #ifdef USERPROG
