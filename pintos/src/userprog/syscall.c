@@ -140,7 +140,7 @@ sys_read (int fd, void * buffer, unsigned size){
 
 int
 write (int fd, void* buffer, unsigned size){
-  //printf("WRITE SYSCALL\n");
+  printf("WRITE SYSCALL\n");
   return 1;
 }
 
