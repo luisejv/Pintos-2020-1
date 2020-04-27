@@ -36,18 +36,19 @@ process_execute (const char *file_name)
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
  
-  char *exec_name;
+  char *exec_name=palloc_get_page(0);
   char *save_ptr;
-  //exec_name = strtok_r(file_name," ",&save_ptr);
+  strlcpy(exec_name,file_name,strlen(file_name)+1); 
+  exec_name = strtok_r(exec_name," ",&save_ptr);
   //Ya esta validado //printf("El valor de exec_name es: %s",exec_name);
   fn_copy = palloc_get_page (0);
   if (fn_copy == NULL)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
-
+  //printf("%s",exec_name);
   /* Create a new thread to execute FILE_NAME. */
   //Cambiamos el file_name por exec_name
-  tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
+  tid = thread_create (exec_name, PRI_DEFAULT, start_process, fn_copy);
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy); 
   return tid;

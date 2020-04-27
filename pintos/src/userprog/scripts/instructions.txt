@@ -1,0 +1,17 @@
+all_test.sh
+
+    Compila threads y userprog, y ejecuta el make check y copia los results en esta carpeta.
+
+single_test.sh
+
+    Compila threads y userprob, y ejecuta un especifico test.
+
+test_cases.txt
+
+    Lista de todos los test cases para usarlos en el sigle_test.sh
+
+results
+
+    Lista de los test cases que pasaron y no pasaron
+
+ 
