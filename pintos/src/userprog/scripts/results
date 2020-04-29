@@ -2,7 +2,7 @@ pass tests/userprog/args-none
 pass tests/userprog/args-single
 pass tests/userprog/args-multiple
 pass tests/userprog/args-many
-FAIL tests/userprog/args-dbl-space
+pass tests/userprog/args-dbl-space
 FAIL tests/userprog/sc-bad-sp
 FAIL tests/userprog/sc-bad-arg
 pass tests/userprog/sc-boundary

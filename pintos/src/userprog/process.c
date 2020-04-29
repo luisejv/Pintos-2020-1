@@ -45,6 +45,9 @@ process_execute (const char *file_name)
   if (fn_copy == NULL)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
+  if(DEBUGG){
+	printf("EL VALOR DE EXEC %s\n",exec_name);
+  }
   //printf("%s",exec_name);
   /* Create a new thread to execute FILE_NAME. */
   //Cambiamos el file_name por exec_name
